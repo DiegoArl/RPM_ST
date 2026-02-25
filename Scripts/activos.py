@@ -124,14 +124,6 @@ def agregar_ceros(df):
 
 def codigo_cliente(df_cartera, df_AF):
 
-  if "clave" not in df_cartera.columns:
-    df_cartera["clave"] = (
-        df_cartera["empresa"].astype(str)
-        + df_cartera["oficina"].astype(str)
-        + df_cartera["codigo_cliente"].astype(str)
-        + df_cartera["domicilio"].astype(str)
-    )
-
   mask = (df_AF["DT FIN"] == "GUMI") & (df_AF["CLIENTE"].str.len() == 14)
   df_AF.loc[mask, "CLIENTE"] = df_AF.loc[mask, "CLIENTE"].str.zfill(15)
   return df_cartera, df_AF
