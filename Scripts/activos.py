@@ -2,14 +2,14 @@ import pandas as pd
 from datetime import datetime
 
 headers_cartera = [
-  "NomCia",
-  "nombre_cliente",
-  "Categoria",
-  "canal",
-  "direccion",
-  "estado_cliente",
-  "clave"
-]
+    "NomCia",
+    "nombre_cliente",
+    "Categoria",
+    "canal",
+    "direccion",
+    "estado_cliente",
+    "clave"
+    ]
 Regiones_Agregar = {
     "DISIM":"LIMA",
     "DISMAC":"LIMA",

@@ -87,7 +87,7 @@ def procesar_flujo_embajadores(archivo):
         left_on=["llave_cliente", "Fecha"],
         right_on=["COD CLIENTE", "Fecha"],
         how="outer"
-    ).drop(columns="COD CLIENTE")
+    ).dropna(subset=["llave_cliente"]).drop(columns="COD CLIENTE")
 
     cl["Fecha"] = pd.to_datetime(cl["Fecha"]).dt.to_period("M").dt.to_timestamp().dt.date
 
@@ -154,8 +154,8 @@ def procesar_flujo_embajadores(archivo):
 
     df_consolidado = pd.concat(resultado, ignore_index=True)
 
-    rp = df_consolidado.merge(cl, left_on=["Cod Cliente", "Fecha"], right_on=["llave_cliente", "Fecha"], how="left").fillna(0)
-    rp = rp.drop(columns=["llave_cliente", "Cod Cliente", "Distribuidor", "Fecha"])
+    rp = df_consolidado.merge(cl, left_on=["COD CLIENTE", "Mes"], right_on=["llave_cliente", "Fecha"], how="left").fillna(0)
+    rp = rp.drop(columns=["llave_cliente", "Cod Cliente", "Distribuidor", "Fecha_x", "Fecha_y"])
 
     MAP_LLENADO_INV = {1: "≥ 80%", 2: "50% - 80%", 3: "0 - 50%", 4: "0"}
     rp["Llenado de la máquina"] = rp["llenado_final"].astype(int).map(MAP_LLENADO_INV)
