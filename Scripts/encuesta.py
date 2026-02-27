@@ -66,7 +66,7 @@ def unir_materiales(series):
 def procesar_flujo_embajadores(archivo):
     dfs = archivo.copy()
 
-    df_Ventas = pivot_fechas(dfs['df_Ventas'])
+    df_Ventas = pivot_fechas(dfs['df_Ventas'].fillna(0))
     df_Ventas = SO_CambioRUC(df_Ventas, dfs['df_CambioRUC'])
 
     df_Ventas['Fecha_LY'] = df_Ventas['Fecha'] - pd.DateOffset(years=1)

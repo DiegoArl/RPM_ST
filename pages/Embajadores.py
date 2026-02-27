@@ -11,32 +11,38 @@ st.markdown("""
 </style>
 """, unsafe_allow_html=True)
 
-
 st.header("Encuesta Embajadores")
 
-
-archivo_embajadores = st.file_uploader(
-    "Sube el excel con el archivo de embajadores (Ventas, Cuotas, Encuesta, Relacion, CambioRUC)",
-    type=["xlsx"]
-)
-
+@st.cache_data
+def cargar_archivo_encuesta_cached(archivo):
+    return leer_archivo_encuesta(archivo)
 
 @st.cache_data
 def procesar_embajadores(df):
     return procesar_flujo_embajadores(df)
 
-
 @st.cache_data
 def generar_excel(df):
     return df_a_excel(df)
 
+def limpiar_app():
+    st.cache_data.clear()
+    for k in list(st.session_state.keys()):
+        del st.session_state[k]
+    st.rerun()
 
-if archivo_embajadores and "embajadores_raw" not in st.session_state:
+archivo_embajadores = st.file_uploader(
+    "Sube el excel con el archivo de embajadores (Ventas, Cuotas, Encuesta, Relacion, CambioRUC)",
+    type=["xlsx"],
+    key="embajadores_file"
+)
+
+if archivo_embajadores and "embajadores_df" not in st.session_state:
 
     try:
 
-        datos = leer_archivo_encuesta(archivo_embajadores)
-        st.session_state.embajadores_raw = datos
+        datos = cargar_archivo_encuesta_cached(archivo_embajadores)
+        st.session_state["embajadores_raw"] = datos
 
         df_final = procesar_embajadores(datos)
 
@@ -44,15 +50,15 @@ if archivo_embajadores and "embajadores_raw" not in st.session_state:
             st.error("El procesamiento no generó resultados")
             st.stop()
 
-        st.session_state.embajadores_df = df_final
-        st.session_state.embajadores_excel = generar_excel(df_final)
+        st.session_state["embajadores_df"] = df_final
+        st.session_state["embajadores_excel"] = generar_excel(df_final)
 
         st.success("Archivo procesado correctamente")
 
     except Exception as e:
 
         st.error("Error procesando el archivo")
-        st.error(str(e))
+        st.exception(e)
         st.stop()
 
 
@@ -61,8 +67,8 @@ if "embajadores_df" not in st.session_state:
     st.stop()
 
 
-df_final = st.session_state.embajadores_df
-excel_file = st.session_state.embajadores_excel
+df_final = st.session_state["embajadores_df"]
+excel_file = st.session_state["embajadores_excel"]
 
 
 st.subheader("Archivo Embajadores")
@@ -73,10 +79,16 @@ st.write(
 
 st.dataframe(df_final.head())
 
+col1, col2 = st.columns(2)
 
-st.download_button(
-    label="Descargar Excel",
-    data=excel_file,
-    file_name="Embajadores_Procesado.xlsx",
-    mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
-)
+with col1:
+    st.download_button(
+        label="Descargar Excel",
+        data=excel_file,
+        file_name="Embajadores_Procesado.xlsx",
+        mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+    )
+
+with col2:
+    if st.button("Reiniciar carga de archivos"):
+        limpiar_app()
