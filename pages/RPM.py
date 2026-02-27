@@ -3,6 +3,14 @@ from Scripts.salidas import df_a_excel
 from Scripts.carga import leer_archivo, leer_archivo_rpm
 from Scripts.activos import procesar_activos, procesar_ventas, procesar_flujo_RPM
 
+st.markdown("""
+<style>
+[data-testid="stSidebarNav"] ul li:first-child {
+    display: none;
+}
+</style>
+""", unsafe_allow_html=True)
+
 st.header("RPM")
 
 @st.cache_data

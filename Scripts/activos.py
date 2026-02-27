@@ -128,7 +128,6 @@ def codigo_cliente(df_cartera, df_AF):
   return df_cartera, df_AF
 
 def cruzarAF_cartera(df, df_cartera):
-
   df = pd.merge(df, df_cartera[headers_cartera],
                 left_on = "CLIENTE",
                 right_on = "clave",
