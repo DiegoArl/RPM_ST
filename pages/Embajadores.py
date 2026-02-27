@@ -79,6 +79,32 @@ st.write(
 
 st.dataframe(df_final.head())
 
+st.markdown("""
+<style>
+
+/* Botón descargar (verde) */
+div[data-testid="stDownloadButton"] button {
+    background-color: #28a745;
+    color: white;
+    border: none;
+}
+div[data-testid="stDownloadButton"] button:hover {
+    background-color: #218838;
+}
+
+/* Botón reiniciar (rojo) */
+button[kind="secondary"] {
+    background-color: #dc3545;
+    color: white;
+    border: none;
+}
+button[kind="secondary"]:hover {
+    background-color: #c82333;
+}
+
+</style>
+""", unsafe_allow_html=True)
+
 col1, col2 = st.columns(2)
 
 with col1:
