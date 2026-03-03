@@ -108,19 +108,25 @@ def procesar_flujo_embajadores(archivo):
     resumen = df_Enc.groupby(["Cod Cliente", "Distribuidor", "Fecha"], as_index=False).agg(
         **{col: (col, "max") for col in bool_cols},
         llenado_final=("llenado_cod", "min"),
-        materiales_info=("¿Cumple foto del éxito?", unir_materiales)
+        materiales_info=("¿Cumple foto del éxito?", unir_materiales),
+        productos_info=("Disponibilidad de productos", unir_materiales)
     )
 
     resumen[["materiales_str", "n_materiales"]] = pd.DataFrame(resumen["materiales_info"].tolist(), index=resumen.index)
+    resumen[["productos_str", "n_productos"]] = pd.DataFrame(resumen["productos_info"].tolist(), index=resumen.index)
+
     dummies = resumen["materiales_str"].str.get_dummies(sep=",")
-    resumen_final = pd.concat([resumen.drop(columns=["materiales_info", "materiales_str"]), dummies], axis=1)
+    dummies_productos = resumen["productos_str"].str.get_dummies(sep=",")
+
+    resumen_final = pd.concat([resumen.drop(columns=["materiales_info", "materiales_str", "productos_info", "productos_str"]), dummies, dummies_productos], axis=1)
 
     resumen_final["Procede"] = (
         (resumen_final['Nuestra máquina está en primera posición?'] == 1) &
         (resumen_final['llenado_final'] == 1) &
         (resumen_final['Máquina contaminada?'] == 0) &
         (resumen_final['Maquina de la Competencia'] == 0) &
-        (resumen_final["n_materiales"] >= 2)
+        (resumen_final["n_materiales"] >= 2) &
+        (resumen_final["n_productos"] >= 2)
     ).astype(int)
 
     resumen_final["Encuesta"] = "SI"
