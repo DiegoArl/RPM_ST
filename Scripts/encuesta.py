@@ -131,7 +131,8 @@ def procesar_flujo_embajadores(archivo):
         "DT",
         "NOMBRE CLIENTE",
         "CLÚSTER",
-        "CANAL"
+        "CANAL",
+        "STATUS"
     ]
 
     df_CF = df_CuotasC[encabezado_cuotas][df_CuotasC["CANAL"]=="HORIZONTAL"]
