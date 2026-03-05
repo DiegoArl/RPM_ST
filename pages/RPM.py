@@ -127,7 +127,7 @@ except Exception as e:
 
 st.subheader("BASE RPM (Sin Fórmulas)")
 st.write(f"Filas: {df_RPM.shape[0]} | Columnas: {df_RPM.shape[1]}")
-st.dataframe(df_RPM)
+#st.dataframe(df_RPM)
 
 st.markdown("""
 <style>
