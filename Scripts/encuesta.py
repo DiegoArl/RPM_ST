@@ -120,13 +120,19 @@ def procesar_flujo_embajadores(archivo):
 
     resumen_final = pd.concat([resumen.drop(columns=["materiales_info", "materiales_str", "productos_info", "productos_str"]), dummies, dummies_productos], axis=1)
 
+    meses_sin_productos = ["2026-01-01", "2026-02-01"]
+    mask_skip = pd.to_datetime(resumen_final["Fecha"]).isin(pd.to_datetime(meses_sin_productos))
+    
+    cond_productos = (resumen_final["n_productos"] >= 2) | mask_skip
+    
     resumen_final["Procede"] = (
         (resumen_final['Nuestra máquina está en primera posición?'] == 1) &
         (resumen_final['llenado_final'] == 1) &
         (resumen_final['Máquina contaminada?'] == 0) &
         (resumen_final['Maquina de la Competencia'] == 0) &
         (resumen_final["n_materiales"] >= 2) &
-        (resumen_final["n_productos"] >= 2)
+        (resumen_final["n_productos"] >= 2) &
+        cond_productos
     ).astype(int)
 
     resumen_final["Encuesta"] = "SI"
