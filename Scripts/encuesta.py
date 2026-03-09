@@ -127,6 +127,8 @@ def procesar_flujo_embajadores(archivo):
         .astype(str)
         .isin(meses_sin_productos)
     )
+    print(resumen_final["Fecha"].unique())
+    print(pd.to_datetime(resumen_final["Fecha"]).dt.to_period("M").unique())
     
     cond_productos = (resumen_final["n_productos"] >= 2) | mask_skip
     
