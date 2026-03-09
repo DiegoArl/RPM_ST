@@ -20,7 +20,8 @@ def pivot_fechas(df):
         var_name="Fecha",
         value_name="Valor"
     )
-    df_long["Fecha"] = pd.to_datetime(df_long["Fecha"], errors="coerce")
+    df_long["Fecha"] = pd.to_datetime(df_long["Fecha"], format="%Y-%m", errors="coerce")
+    df_long["Fecha"] = df_long["Fecha"].dt.to_period("M").dt.to_timestamp()
     df_long = df_long[df_long[col_cliente].notna() & df_long["Valor"].notna()]
     cols_grp = [col_cliente, "Fecha"]
     df_long = (
@@ -89,10 +90,10 @@ def procesar_flujo_embajadores(archivo):
         how="outer"
     ).dropna(subset=["llave_cliente"]).drop(columns="COD CLIENTE")
 
-    cl["Fecha"] = pd.to_datetime(cl["Fecha"]).dt.to_period("M").dt.to_timestamp().dt.date
+    cl["Fecha"] = pd.to_datetime(cl["Fecha"]).dt.to_period("M").dt.to_timestamp()
 
     df_Enc = dfs['df_Encuesta'].copy()
-    df_Enc["Fecha"] = pd.to_datetime(df_Enc["Created on"], errors="coerce").dt.to_period("M").dt.to_timestamp().dt.date
+    df_Enc["Fecha"] = pd.to_datetime(df_Enc["Created on"], errors="coerce").dt.to_period("M").dt.to_timestamp()
 
     df_Enc = df_Enc[df_Enc["Cliente pertenece a plan de fidelización?"] == "SI"]
 
@@ -120,7 +121,7 @@ def procesar_flujo_embajadores(archivo):
 
     resumen_final = pd.concat([resumen.drop(columns=["materiales_info", "materiales_str", "productos_info", "productos_str"]), dummies, dummies_productos], axis=1)
 
-    meses_sin_productos = {date(2026,1,1), date(2026,2,1)}
+    meses_sin_productos = pd.to_datetime(["2026-01-01","2026-02-01"])
     mask_skip = resumen_final["Fecha"].isin(meses_sin_productos)
     
     cond_productos = (resumen_final["n_productos"] >= 2) | mask_skip
@@ -166,6 +167,9 @@ def procesar_flujo_embajadores(archivo):
 
     df_consolidado = pd.concat(resultado, ignore_index=True)
 
+    df_consolidado["Mes"] = pd.to_datetime(df_consolidado["Mes"])
+    cl["Fecha"] = pd.to_datetime(cl["Fecha"])
+    
     rp = df_consolidado.merge(cl, left_on=["COD CLIENTE", "Mes"], right_on=["llave_cliente", "Fecha"], how="left").fillna(0)
     rp = rp.drop(columns=["llave_cliente", "Cod Cliente", "Distribuidor", "Fecha_x", "Fecha_y"])
 
