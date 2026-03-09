@@ -120,15 +120,8 @@ def procesar_flujo_embajadores(archivo):
 
     resumen_final = pd.concat([resumen.drop(columns=["materiales_info", "materiales_str", "productos_info", "productos_str"]), dummies, dummies_productos], axis=1)
 
-    meses_sin_productos = ["2026-01-01", "2026-02-01"]
-    mask_skip = (
-        pd.to_datetime(resumen_final["Fecha"])
-        .dt.to_period("M")
-        .astype(str)
-        .isin(meses_sin_productos)
-    )
-    print(resumen_final["Fecha"].unique())
-    print(pd.to_datetime(resumen_final["Fecha"]).dt.to_period("M").unique())
+    meses_sin_productos = {date(2026,1,1), date(2026,2,1)}
+    mask_skip = resumen_final["Fecha"].isin(meses_sin_productos)
     
     cond_productos = (resumen_final["n_productos"] >= 2) | mask_skip
     
