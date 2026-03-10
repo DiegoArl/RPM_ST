@@ -130,7 +130,6 @@ def procesar_flujo_embajadores(archivo):
         (resumen_final['Nuestra máquina está en primera posición?'] == 1) &
         (resumen_final['llenado_final'] == 1) &
         (resumen_final['Máquina contaminada?'] == 0) &
-        (resumen_final['Maquina de la Competencia'] == 0) &
         (resumen_final["n_materiales"] >= 2) &
         cond_productos
     ).astype(int)
