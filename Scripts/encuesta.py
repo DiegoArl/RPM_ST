@@ -184,6 +184,10 @@ def procesar_flujo_embajadores(archivo):
     for col in bool_cols:
         rp[col] = rp[col].replace({0: "NO", 1: "SI"})
 
+    rp['Valor_x'] = pd.to_numeric(rp['Valor_x'], errors='coerce')
+    rp['Valor_y'] = pd.to_numeric(rp['Valor_y'], errors='coerce')
+    rp['Valor_LY'] = pd.to_numeric(rp['Valor_LY'], errors='coerce')
+        
     rp['Valor_LY'] = np.where((rp['Valor_y'] == 0) | (rp['Valor_y'].isna()), 0, rp['Valor_LY'])
     rp['%Avance'] = np.divide(
         rp['Valor_x'],
