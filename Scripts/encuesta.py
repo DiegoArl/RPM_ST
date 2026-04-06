@@ -185,11 +185,18 @@ def procesar_flujo_embajadores(archivo):
         rp[col] = rp[col].replace({0: "NO", 1: "SI"})
 
     rp['Valor_LY'] = np.where((rp['Valor_y'] == 0) | (rp['Valor_y'].isna()), 0, rp['Valor_LY'])
-    rp['%Avance'] = rp['Valor_x'] / rp['Valor_y']
-    rp['%Crecimiento'] = rp['Valor_x'] / rp['Valor_LY']
-
-    cols_calculadas = ['%Avance', '%Crecimiento']
-    rp[cols_calculadas] = rp[cols_calculadas].replace([np.inf, -np.inf], np.nan).fillna(0)
+    rp['%Avance'] = np.divide(
+        rp['Valor_x'],
+        rp['Valor_y'],
+        out=np.zeros_like(rp['Valor_x'], dtype=float),
+        where=(rp['Valor_y'] != 0)
+    )
+    rp['%Crecimiento'] = np.divide(
+        rp['Valor_x'],
+        rp['Valor_LY'],
+        out=np.zeros_like(rp['Valor_x'], dtype=float),
+        where=(rp['Valor_LY'] != 0)
+    )
 
     rp['Ruptura'] = np.where(rp['Valor_x'] <= 0, "Ruptura", "Ok")
 
