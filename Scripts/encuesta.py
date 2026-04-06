@@ -71,14 +71,20 @@ def procesar_flujo_embajadores(archivo):
     df_Ventas = SO_CambioRUC(df_Ventas, dfs['df_CambioRUC'])
 
     df_Ventas['Fecha_LY'] = df_Ventas['Fecha'] - pd.DateOffset(years=1)
-    df_resultado = pd.merge(
-        df_Ventas,
-        df_Ventas[['llave_cliente', 'Fecha', 'Valor']],
+    
+    df_aux = df_Ventas[['llave_cliente', 'Fecha', 'Valor']].rename(
+        columns={
+            'Fecha': 'Fecha_LY_match',
+            'Valor': 'Valor_LY'
+        }
+    )
+    
+    df_resultado = df_Ventas.merge(
+        df_aux,
         left_on=['llave_cliente', 'Fecha_LY'],
-        right_on=['llave_cliente', 'Fecha'],
-        how='left',
-        suffixes=('', '_LY')
-    ).drop(columns=['Fecha_LY'])
+        right_on=['llave_cliente', 'Fecha_LY_match'],
+        how='left'
+    ).drop(columns=['Fecha_LY', 'Fecha_LY_match'])
 
     df_CuotasC = dfs['df_Cuotas']
     df_Cuotas = pivot_fechas(dfs['df_Cuotas'])
