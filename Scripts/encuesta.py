@@ -78,7 +78,7 @@ def procesar_flujo_embajadores(archivo):
         right_on=['llave_cliente', 'Fecha'],
         how='left',
         suffixes=('', '_LY')
-    ).drop(columns=['Fecha_LY', 'Fecha_LY'])
+    ).drop(columns=['Fecha_LY'])
 
     df_CuotasC = dfs['df_Cuotas']
     df_Cuotas = pivot_fechas(dfs['df_Cuotas'])
@@ -178,7 +178,7 @@ def procesar_flujo_embajadores(archivo):
     for col in bool_cols:
         rp[col] = rp[col].replace({0: "NO", 1: "SI"})
 
-    rp['Valor_LY'] = np.where(rp['Valor_y'] == 0, 0, rp['Valor_LY'])
+    rp['Valor_LY'] = np.where((rp['Valor_y'] == 0) | (rp['Valor_y'].isna()), 0, rp['Valor_LY'])
     rp['%Avance'] = rp['Valor_x'] / rp['Valor_y']
     rp['%Crecimiento'] = rp['Valor_x'] / rp['Valor_LY']
 
