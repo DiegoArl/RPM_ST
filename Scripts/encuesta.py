@@ -123,7 +123,10 @@ def procesar_flujo_embajadores(archivo):
     resumen[["productos_str", "n_productos"]] = pd.DataFrame(resumen["productos_info"].tolist(), index=resumen.index)
 
     dummies = resumen["materiales_str"].str.get_dummies(sep=",")
+    dummies = dummies.loc[:, dummies.columns != ""].add_prefix("mat_")
+    
     dummies_productos = resumen["productos_str"].str.get_dummies(sep=",")
+    dummies_productos = dummies_productos.loc[:, dummies_productos.columns != ""].add_prefix("prod_")
 
     resumen_final = pd.concat([resumen.drop(columns=["materiales_info", "materiales_str", "productos_info", "productos_str"]), dummies, dummies_productos], axis=1)
 
