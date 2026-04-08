@@ -121,3 +121,30 @@ def leer_archivo_rpm(archivo):
         hojas,
         doble_header=['Ventas', 'Cobertura']
     )
+
+def leer_archivo_materiales_datanest(archivo):
+    
+    hojas = {
+        'BD - HORZ': 'df_so_hor',
+        'BD - AMB': 'df_so_amb'
+    }
+
+    return leer_excel_hojas(
+        archivo,
+        hojas,
+        doble_header=['BD - HORZ', 'BD - AMB']
+    )
+
+def leer_archivo_materiales(archivo):
+    
+    hojas = {
+        'Materiales - HOR': 'df_cuota_hor',
+        'Materiales - AMB': 'df_cuota_amb',
+        'Material - Periodo': 'df_materiales',
+        'Region': 'df_region'
+    }
+
+    return leer_excel_hojas(
+        archivo,
+        hojas
+    )

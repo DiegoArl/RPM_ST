@@ -3,37 +3,15 @@ from Scripts.salidas import df_a_excel
 from Scripts.carga import leer_archivo, leer_archivo_rpm
 from Scripts.activos import procesar_activos, procesar_ventas, procesar_flujo_RPM
 
-st.markdown("""
-<style>
-[data-testid="stSidebarNav"] ul li:first-child {
-    display: none;
-}
-</style>
-""", unsafe_allow_html=True)
-
 st.header("RPM")
 
-@st.cache_data
-def cargar_archivo(archivo):
-    return leer_archivo(archivo)
-
-@st.cache_data
-def cargar_archivo_rpm_cached(archivo):
-    return leer_archivo_rpm(archivo)
-
-@st.cache_data
-def exportar_excel(df):
-    return df_a_excel(df)
-
-@st.cache_data
-def procesar_rpm_cache(df_activos, df_out):
-    return procesar_flujo_RPM(df_activos, df_out)
-
-def limpiar_app():
-    st.cache_data.clear()
-    for k in list(st.session_state.keys()):
-        del st.session_state[k]
-    st.rerun()
+def archivos_rpm_cargados():
+    requeridos = [
+        "ventas_df",
+        "AF",
+        "Cartera"
+    ]
+    return all(k in st.session_state for k in requeridos)
 
 archivo_ventas = st.file_uploader(
     "Subir Ventas y Coberturas",
@@ -41,9 +19,9 @@ archivo_ventas = st.file_uploader(
     key="ventas_file"
 )
 
-if archivo_ventas:
+if archivo_ventas and "ventas_df" not in st.session_state:
     try:
-        datos = cargar_archivo_rpm_cached(archivo_ventas)
+        datos = leer_archivo_rpm(archivo_ventas)
         df_out = procesar_ventas(datos)
 
         if df_out.empty:
@@ -57,28 +35,17 @@ if archivo_ventas:
         st.exception(e)
         st.stop()
 
-if "ventas_df" not in st.session_state:
-    st.warning("Cargar archivo de ventas")
-    st.stop()
-
-df_out = st.session_state["ventas_df"]
-
-
 archivo_AF = st.file_uploader(
     "Subir activos",
     type=["csv", "xlsx"]
 )
 
-if archivo_AF:
+if archivo_AF and "AF" not in st.session_state:
     try:
-        st.session_state["AF"] = cargar_archivo(archivo_AF)
+        st.session_state["AF"] = leer_archivo(archivo_AF)
         st.success("Activos cargados")
     except Exception as e:
         st.exception(e)
-
-if "AF" not in st.session_state:
-    st.warning("Cargar base de activos")
-    st.stop()
 
 archivo_Cartera = st.file_uploader(
     "Subir cartera de clientes",
@@ -86,20 +53,16 @@ archivo_Cartera = st.file_uploader(
     key="cartera_file"
 )
 
-if archivo_Cartera:
+if archivo_Cartera and "Cartera" not in st.session_state:
     try:
-        st.session_state["Cartera"] = cargar_archivo(archivo_Cartera)
+        st.session_state["Cartera"] = leer_archivo(archivo_Cartera)
         st.success("Cartera cargada")
     except Exception as e:
         st.exception(e)
 
-if "Cartera" not in st.session_state:
-    st.warning("Cargar cartera de clientes")
+if not archivos_rpm_cargados():
+    st.warning("Faltan archivos por cargar")
     st.stop()
-
-
-df_AF = st.session_state["AF"]
-df_Cartera = st.session_state["Cartera"]
 
 try:
     df_activos = procesar_activos(
@@ -110,14 +73,12 @@ except Exception as e:
     st.exception(e)
     st.stop()
 
-
 if df_activos.empty:
     st.warning("No se generaron activos")
     st.stop()
 
-
 try:
-    df_RPM = procesar_rpm_cache(
+    df_RPM = procesar_flujo_RPM(
         df_activos,
         st.session_state["ventas_df"]
     )
@@ -127,7 +88,6 @@ except Exception as e:
 
 st.subheader("BASE RPM (Sin Fórmulas)")
 st.write(f"Filas: {df_RPM.shape[0]} | Columnas: {df_RPM.shape[1]}")
-#st.dataframe(df_RPM)
 
 st.markdown("""
 <style>
@@ -155,16 +115,10 @@ button[kind="secondary"]:hover {
 </style>
 """, unsafe_allow_html=True)
 
-col1, col2 = st.columns(2)
 
-with col1:
-    st.download_button(
-        label="Descargar Excel",
-        data=exportar_excel(df_RPM),
-        file_name="RPM_final.xlsx",
-        mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
-    )
-
-with col2:
-    if st.button("Reiniciar carga de archivos"):
-        limpiar_app()
+st.download_button(
+    label="Descargar Excel",
+    data=df_a_excel(df_RPM),
+    file_name="RPM_final.xlsx",
+    mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+)
