@@ -1,18 +1,12 @@
 import streamlit as st
 
-st.set_page_config(
-    page_title= "Reportes",
-    layout="wide"
-)
+embajadores_page = st.Page("pages/Embajadores.py", title="Embajadores", icon="🚚")
+rpm_page = st.Page("pages/RPM.py", title="RPM", icon="🗺️")
 
-st.title("Página principal")
+pg = st.navigation(
+        {
+            "Reportes": [rpm_page, embajadores_page], 
+        }
+    )
 
-st.markdown("""
-<style>
-[data-testid="stSidebarNav"] ul li:first-child {
-    display: none;
-}
-</style>
-""", unsafe_allow_html=True)
-
-st.switch_page("pages/Embajadores.py")
+pg.run()
