@@ -38,47 +38,86 @@ except Exception as e:
  
 periodos = sorted(df_raw["Periodo"].dropna().unique(), reverse=True)
 canales = sorted(df_raw["Canal"].dropna().unique())
-codigos = ["All"] + sorted(df_raw["Código Material"].dropna().astype(str).unique())
+clusters = ["All"] + sorted(df_raw["cluster"].dropna().unique())
+regiones = ["All"] + sorted(df_raw["Region"].dropna().unique())
  
-if "periodo_sel" not in st.session_state:
-    st.session_state["periodo_sel"] = periodos[0]
-if "canal_sel" not in st.session_state:
-    st.session_state["canal_sel"] = canales[0]
-if "codigo_sel" not in st.session_state:
-    st.session_state["codigo_sel"] = "All"
- 
+for key, default in [
+    ("periodo_sel", periodos[1]),
+    ("canal_sel", canales[1]),
+    ("cluster_sel", []),
+    ("region_sel", []),
+    ("codigo_sel", []),
+]:
+    if key not in st.session_state:
+        st.session_state[key] = default
+
 st.title("Avance Materiales")
-col_f1, col_f2, col_f3 = st.columns([1, 1, 2])
- 
+
+col_f1, col_f2, col_f3, col_f4 = st.columns(4)
 with col_f1:
     st.session_state["periodo_sel"] = st.radio(
         "Periodo", periodos,
         index=periodos.index(st.session_state["periodo_sel"]),
     )
- 
 with col_f2:
     st.session_state["canal_sel"] = st.radio(
         "Canal", canales,
         index=canales.index(st.session_state["canal_sel"]),
     )
- 
 with col_f3:
-    idx_codigo = codigos.index(st.session_state["codigo_sel"]) if st.session_state["codigo_sel"] in codigos else 0
-    st.session_state["codigo_sel"] = st.selectbox(
-        "Código Material", codigos, index=idx_codigo,
+    st.session_state["cluster_sel"] = st.multiselect(
+        "Cluster", sorted(df_raw["cluster"].dropna().unique()),
+        default=st.session_state["cluster_sel"] if isinstance(st.session_state["cluster_sel"], list) else [],
     )
- 
+with col_f4:
+    st.session_state["region_sel"] = st.multiselect(
+        "Región", sorted(df_raw["Region"].dropna().unique()),
+        default=st.session_state["region_sel"] if isinstance(st.session_state["region_sel"], list) else [],
+    )
+
 periodo_sel = st.session_state["periodo_sel"]
 canal_sel = st.session_state["canal_sel"]
-codigo_sel = st.session_state["codigo_sel"]
- 
-df = df_raw[
+cluster_sel = st.session_state["cluster_sel"]
+region_sel = st.session_state["region_sel"]
+
+df_pre = df_raw[
     (df_raw["Periodo"] == periodo_sel) &
     (df_raw["Canal"] == canal_sel)
 ].copy()
+if cluster_sel:
+    df_pre = df_pre[df_pre["cluster"].isin(cluster_sel)]
+if region_sel:
+    df_pre = df_pre[df_pre["Region"].isin(region_sel)]
+
+mapa_materiales = (
+    df_pre[df_pre["Nombre Material"].notna() & (df_pre["Nombre Material"].str.strip() != "")]
+    [["Código Material", "Nombre Material"]]
+    .drop_duplicates()
+    .sort_values("Nombre Material")
+)
+opciones_materiales = ["All"] + mapa_materiales["Nombre Material"].tolist()
+
+if isinstance(st.session_state["codigo_sel"], list):
+    st.session_state["codigo_sel"] = [m for m in st.session_state["codigo_sel"] if m in mapa_materiales["Nombre Material"].tolist()]
+
+st.session_state["codigo_sel"] = st.multiselect(
+    "Nombre Material",
+    mapa_materiales["Nombre Material"].tolist(),
+    default=st.session_state["codigo_sel"] if isinstance(st.session_state["codigo_sel"], list) else [],
+)
+
+df = df_pre.copy()
+if st.session_state["codigo_sel"]:
+    codigos = mapa_materiales[mapa_materiales["Nombre Material"].isin(st.session_state["codigo_sel"])]["Código Material"].tolist()
+    df = df[df["Código Material"].isin(codigos)]
  
-if codigo_sel != "All":
-    df = df[df["Código Material"].astype(str) == codigo_sel]
+df = df_pre.copy()
+if st.session_state["codigo_sel"] and st.session_state["codigo_sel"] != "All":
+    codigos = mapa_materiales[mapa_materiales["Nombre Material"].isin(
+        st.session_state["codigo_sel"] if isinstance(st.session_state["codigo_sel"], list)
+        else [st.session_state["codigo_sel"]]
+    )]["Código Material"].tolist()
+    df = df[df["Código Material"].isin(codigos)]
  
 if df.empty:
     st.warning("No hay datos para los filtros seleccionados.")
