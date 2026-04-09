@@ -25,9 +25,8 @@ if archivo_codificacion:
 
     if st.session_state.get("archivo_hash") != hash_actual:
         codificacion = leer_archivo_materiales_datanest(archivo_codificacion)
-        _, df_out_c = procesar_flujo_materiales_datanest(codificacion)
 
-        st.session_state["codificacion_df"] = df_out_c
+        st.session_state["codificacion_df"] = codificacion
         st.session_state["archivo_hash"] = hash_actual
 
 if "codificacion_df" in st.session_state:
