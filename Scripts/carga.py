@@ -125,14 +125,14 @@ def leer_archivo_rpm(archivo):
 def leer_archivo_materiales_datanest(archivo):
     
     hojas = {
-        'BD - HORZ': 'df_so_hor',
-        'BD - AMB': 'df_so_amb'
+        'BD-HORZ': 'df_so_hor',
+        'BD-AMB': 'df_so_amb'
     }
 
     return leer_excel_hojas(
         archivo,
         hojas,
-        doble_header=['BD - HORZ', 'BD - AMB']
+        doble_header=['BD-HORZ', 'BD-AMB']
     )
 
 def leer_archivo_materiales(archivo):

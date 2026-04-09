@@ -6,7 +6,7 @@ materiales_page = st.Page("pages/Materiales.py", title="Materiales", icon="ğŸ–ï
 
 pg = st.navigation(
         {
-            "Reportes": [rpm_page, embajadores_page], 
+            "Reportes": [rpm_page, embajadores_page, materiales_page], 
         }
     )
 

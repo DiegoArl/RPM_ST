@@ -1,4 +1,5 @@
 import streamlit as st
+from datetime import datetime
 from Scripts.salidas import df_a_excel
 from Scripts.carga import leer_archivo, leer_archivo_rpm
 from Scripts.activos import procesar_activos, procesar_ventas, procesar_flujo_RPM
@@ -6,11 +7,7 @@ from Scripts.activos import procesar_activos, procesar_ventas, procesar_flujo_RP
 st.header("RPM")
 
 def archivos_rpm_cargados():
-    requeridos = [
-        "ventas_df",
-        "AF",
-        "Cartera"
-    ]
+    requeridos = ["ventas_raw", "AF", "Cartera"]
     return all(k in st.session_state for k in requeridos)
 
 archivo_ventas = st.file_uploader(
@@ -19,33 +16,25 @@ archivo_ventas = st.file_uploader(
     key="ventas_file"
 )
 
-if archivo_ventas and "ventas_df" not in st.session_state:
+if archivo_ventas:
     try:
-        datos = leer_archivo_rpm(archivo_ventas)
-        df_out = procesar_ventas(datos)
-
-        if df_out.empty:
-            st.error("El procesamiento de ventas no generó resultados")
-            st.stop()
-
-        st.session_state["ventas_df"] = df_out
-        st.success("Ventas procesadas correctamente")
-
+        st.session_state["ventas_raw"] = leer_archivo_rpm(archivo_ventas)
+        st.success("Archivo de ventas subido correctamente")
     except Exception as e:
-        st.exception(e)
-        st.stop()
+        st.error(str(e))
 
 archivo_AF = st.file_uploader(
     "Subir activos",
-    type=["csv", "xlsx"]
+    type=["csv", "xlsx"],
+    key="af_file"
 )
 
-if archivo_AF and "AF" not in st.session_state:
+if archivo_AF:
     try:
         st.session_state["AF"] = leer_archivo(archivo_AF)
-        st.success("Activos cargados")
+        st.success("Activos cargados correctamente")
     except Exception as e:
-        st.exception(e)
+        st.error(str(e))
 
 archivo_Cartera = st.file_uploader(
     "Subir cartera de clientes",
@@ -53,72 +42,66 @@ archivo_Cartera = st.file_uploader(
     key="cartera_file"
 )
 
-if archivo_Cartera and "Cartera" not in st.session_state:
+if archivo_Cartera:
     try:
         st.session_state["Cartera"] = leer_archivo(archivo_Cartera)
-        st.success("Cartera cargada")
+        st.success("Cartera cargada correctamente")
     except Exception as e:
-        st.exception(e)
+        st.error(str(e))
 
-if not archivos_rpm_cargados():
+
+listo = archivos_rpm_cargados()
+
+if not listo:
     st.warning("Faltan archivos por cargar")
+
+if st.button("Procesar archivos", disabled=not listo):
+    try:
+        df_ventas = procesar_ventas(st.session_state["ventas_raw"])
+        if df_ventas.empty:
+            st.error("El procesamiento de ventas no generó resultados.")
+            st.stop()
+        st.session_state["ventas_df"] = df_ventas
+    except Exception as e:
+        st.error("Error procesando ventas. Verifique el formato o cambie de archivo.")
+        st.session_state.pop("ventas_raw", None)
+        st.stop()
+
+    try:
+        df_activos = procesar_activos(st.session_state["AF"], st.session_state["Cartera"])
+        if df_activos.empty:
+            st.warning("No se generaron activos.")
+            st.stop()
+    except Exception as e:
+        st.error("Error procesando activos. Verifique el formato o cambie de archivo.")
+        st.stop()
+
+    try:
+        df_RPM = procesar_flujo_RPM(df_activos, st.session_state["ventas_df"])
+        st.session_state["rpm_df"] = df_RPM
+        st.session_state["rpm_excel"] = df_a_excel(df_RPM)
+    except Exception as e:
+        st.error("Error generando RPM. Verifique el formato o cambie de archivo.")
+        for key in ["ventas_raw", "ventas_df", "AF", "Cartera", "rpm_df", "rpm_excel"]:
+            st.session_state.pop(key, None)
+        st.stop()
+
+if "rpm_df" not in st.session_state:
     st.stop()
 
-try:
-    df_activos = procesar_activos(
-        st.session_state["AF"],
-        st.session_state["Cartera"]
-    )
-except Exception as e:
-    st.exception(e)
-    st.stop()
-
-if df_activos.empty:
-    st.warning("No se generaron activos")
-    st.stop()
-
-try:
-    df_RPM = procesar_flujo_RPM(
-        df_activos,
-        st.session_state["ventas_df"]
-    )
-except Exception as e:
-    st.exception(e)
-    st.stop()
+df_RPM = st.session_state["rpm_df"]
+excel_file = st.session_state["rpm_excel"]
 
 st.subheader("BASE RPM (Sin Fórmulas)")
 st.write(f"Filas: {df_RPM.shape[0]} | Columnas: {df_RPM.shape[1]}")
+st.dataframe(df_RPM.head())
 
-st.markdown("""
-<style>
-
-/* Botón descargar (verde) */
-div[data-testid="stDownloadButton"] button {
-    background-color: #28a745;
-    color: white;
-    border: none;
-}
-div[data-testid="stDownloadButton"] button:hover {
-    background-color: #218838;
-}
-
-/* Botón reiniciar (rojo) */
-button[kind="secondary"] {
-    background-color: #dc3545;
-    color: white;
-    border: none;
-}
-button[kind="secondary"]:hover {
-    background-color: #c82333;
-}
-
-</style>
-""", unsafe_allow_html=True)
-
+fecha_actual = datetime.now()
+nombre_archivo = f"RPM_final_{fecha_actual.strftime('%d%m%Y')}.xlsx"
 
 st.download_button(
     label="Descargar Excel",
-    data=df_a_excel(df_RPM),
-    file_name="RPM_final.xlsx",
+    data=excel_file,
+    file_name=nombre_archivo,
     mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
 )
