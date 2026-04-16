@@ -90,7 +90,7 @@ def agregar_periodo_y_cok(df_so, df_material_fecha, df_material_cok):
 
     return df
 
-def cuota_materiales(df_cuota_amb, df_cuota_hor, df_region, df_material):
+def cuota_materiales(df_cuota_amb, df_cuota_hor, df_region):
     encabezado = [
         'DT_',
         'Periodo',
@@ -106,83 +106,45 @@ def cuota_materiales(df_cuota_amb, df_cuota_hor, df_region, df_material):
 
     df_cuota = pd.concat([df_amb, df_hor]).fillna(0)
 
-    df_cuota_fecha = df_cuota.merge(
-        df_material[['Código Material', 'Periodo', 'Fecha Inicio', 'Fecha Fin']].drop_duplicates(),
-        left_on=['Codigo', 'Periodo'],
-        right_on=['Código Material', 'Periodo'],
-        how='left'
-    ).drop(columns=['Código Material'])
-
-    df_entregado = df_cuota_fecha.merge(
+    df_entregado = df_cuota.merge(
         df_region,
         on="DT_",
         how="left"
     ).groupby(
-        ["DT", "Region","Canal", "Periodo", "Codigo", "Fecha Inicio", "Fecha Fin"],
+        ["DT", "Region","Canal", "Periodo", "Codigo"],
         as_index=False
     )["Entregado"].sum()
 
     return df_entregado
 
 def agregar_dummies_faltantes(df_final, df_entregado):
-    # ---------------------------------------------------------------
-    # 1. Expandir df_entregado: una fila por mes (día 1) del rango
-    # ---------------------------------------------------------------
-    filas_expandidas = []
-    for _, row in df_entregado.iterrows():
-        meses = pd.date_range(
-            start=pd.to_datetime(row['Fecha Inicio']).replace(day=1),
-            end=pd.to_datetime(row['Fecha Fin']).replace(day=1),
-            freq='MS'
-        )
-        for fecha in meses:
-            filas_expandidas.append({
-                'DT':        row['DT'],
-                'Canal':     row['Canal'],
-                'Codigo':    row['Codigo'],
-                'Periodo':   row['Periodo'],
-                'Region':    row['Region'],
-                'Entregado': row['Entregado'],
-                'Fecha':     fecha,   # día 1 del mes, solo para cruce
-            })
 
-    esperadas = pd.DataFrame(filas_expandidas)
+    # Combinaciones que ya existen en df_final
+    existentes = (
+        df_final[['DT', 'Canal', 'Codigo', 'Periodo']]
+        .drop_duplicates()
+    )
 
-    if esperadas.empty:
-        return df_final
+    # Todas las combinaciones que deberían existir
+    esperadas = (
+        df_entregado[['DT', 'Canal', 'Codigo', 'Periodo', 'Region', 'Entregado']]
+        .drop_duplicates()
+    )
 
-    # ---------------------------------------------------------------
-    # 2. Crear columna de cruce en df_final (día 1) sin tocar original
-    # ---------------------------------------------------------------
-    existentes = df_final[['DT', 'Canal', 'Codigo', 'Periodo', 'Fecha']].copy()
-    existentes['Fecha_cruce'] = pd.to_datetime(existentes['Fecha']).dt.to_period('M').dt.to_timestamp()
-    existentes = existentes.drop_duplicates(subset=['DT', 'Canal', 'Codigo', 'Periodo', 'Fecha_cruce'])
-
-    # Renombrar para hacer el merge por Fecha_cruce
-    esperadas['Fecha_cruce'] = esperadas['Fecha']
-
-    # ---------------------------------------------------------------
-    # 3. Detectar combinaciones faltantes
-    # ---------------------------------------------------------------
+    # Encontrar faltantes
     faltantes = esperadas.merge(
-        existentes[['DT', 'Canal', 'Codigo', 'Periodo', 'Fecha_cruce']],
-        on=['DT', 'Canal', 'Codigo', 'Periodo', 'Fecha_cruce'],
+        existentes,
+        on=['DT', 'Canal', 'Codigo', 'Periodo'],
         how='left',
         indicator=True
     )
-    faltantes = faltantes[faltantes['_merge'] == 'left_only'].drop(columns=['_merge', 'Fecha_cruce'])
-    # 'Fecha' aquí sigue siendo día 1 — es el valor que va en el dummy
-    # (no hay fecha real que preservar porque el registro no existe)
+    faltantes = faltantes[faltantes['_merge'] == 'left_only'].drop(columns='_merge')
 
     if faltantes.empty:
         return df_final
 
-    # ---------------------------------------------------------------
-    # 4. Construir dummies
-    # ---------------------------------------------------------------
-    n = len(faltantes)
-    dummies = pd.DataFrame(index=range(n))
-
+    # Construir dummies alineados con columnas de df_final
+    dummies = pd.DataFrame(index=range(len(faltantes)))
     dummies['llave_cliente']      = pd.NA
     dummies['Nombre Region']      = faltantes['Region'].values
     dummies['Nombre Cliente HML'] = faltantes['DT'].values
@@ -190,7 +152,7 @@ def agregar_dummies_faltantes(df_final, df_entregado):
     dummies['Nombre Material']    = pd.NA
     dummies['nom_vendedor']       = pd.NA
     dummies['cluster']            = pd.NA
-    dummies['Fecha']              = faltantes['Fecha'].values
+    dummies['Fecha']              = pd.NA
     dummies['Codificado']         = 0
     dummies['Canal']              = faltantes['Canal'].values
     dummies['Periodo']            = faltantes['Periodo'].values
@@ -210,11 +172,11 @@ def procesar_flujo_materiales_datanest(archivo_dnm, archivo_mat):
     df_material_cok, df_material_fecha = separar_cluster_material(dfm['df_materiales'])
     df_periodo = agregar_periodo_y_cok(df_so, df_material_fecha, df_material_cok)
 
-    df_entregado = cuota_materiales(dfm['df_cuota_amb'], dfm['df_cuota_hor'], dfm['df_region'], dfm['df_materiales'])
+    df_entregado = cuota_materiales(dfm['df_cuota_amb'], dfm['df_cuota_hor'], dfm['df_region'])
 
     df_entregado["Codigo"] = df_entregado["Codigo"].astype(str)
     df_final = df_periodo.merge(
-        df_entregado[["DT","Periodo","Codigo", "Canal", "Entregado"]],
+        df_entregado,
         left_on=["Nombre Cliente HML", "Periodo", "Código Material", "Canal"],
         right_on=["DT","Periodo","Codigo", "Canal"],
         how="inner"
