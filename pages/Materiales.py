@@ -72,7 +72,7 @@ st.write(f"Filas: {df_final.shape[0]} | Columnas: {df_final.shape[1]}")
 st.dataframe(df_final.head())
 
 fecha_actual = datetime.now()
-nombre_archivo = f"Materiales_Procesado_{fecha_actual.strftime('%d%m%Y')}.xlsx"
+nombre_archivo = f"Materiales_Procesado.xlsx"
 
 st.download_button(
     label="Descargar Excel",
